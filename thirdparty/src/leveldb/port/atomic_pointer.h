@@ -17,7 +17,7 @@
 
 #ifndef PORT_ATOMIC_POINTER_H_
 #define PORT_ATOMIC_POINTER_H_
-
+#define LEVELDB_ATOMIC_PRESENT
 #include <stdint.h>
 #ifdef LEVELDB_ATOMIC_PRESENT
 #include <atomic>

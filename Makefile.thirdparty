@@ -16,7 +16,7 @@ clean-src:
 	rm -r $(SRC_DIR)/yaml-cpp/build || true
 
 glog:
-	cd $(SRC_DIR)/glog; cmake \
+	cd $(SRC_DIR)/glog; emcmake cmake \
 	. -Bbuild \
 	-DWITH_GFLAGS:BOOL=OFF \
 	&& cmake --build build
@@ -25,32 +25,27 @@ glog:
 	cp $(SRC_DIR)/glog/build/libglog.a thirdparty/lib/
 
 leveldb:
-	cd $(SRC_DIR)/leveldb; make
+	cd $(SRC_DIR)/leveldb; emmake make
 	cp -R $(SRC_DIR)/leveldb/include/leveldb thirdparty/include/
 	cp $(SRC_DIR)/leveldb/libleveldb.a thirdparty/lib/
 
 marisa:
-	cd $(SRC_DIR)/marisa-trie; ./configure --disable-debug --disable-dependency-tracking --enable-static && make
+	cd $(SRC_DIR)/marisa-trie; emconfigure ./configure --disable-debug --disable-dependency-tracking --enable-static && make
 	cp -R $(SRC_DIR)/marisa-trie/lib/marisa thirdparty/include/
 	cp $(SRC_DIR)/marisa-trie/lib/marisa.h thirdparty/include/
 	cp $(SRC_DIR)/marisa-trie/lib/.libs/libmarisa.a thirdparty/lib/
 
 opencc:
-	cd $(SRC_DIR)/opencc; cmake \
-	. -Bbuild \
-	-DCMAKE_BUILD_TYPE=Release \
-	-DCMAKE_INSTALL_PREFIX=/usr \
-	-DBUILD_SHARED_LIBS:BOOL=OFF \
-	&& cmake --build build
+	cd $(SRC_DIR)/opencc; make wasm
 	mkdir -p thirdparty/include/opencc
 	cp $(SRC_DIR)/opencc/src/*.h* thirdparty/include/opencc/
-	cp $(SRC_DIR)/opencc/build/src/libopencc.a thirdparty/lib/
+	cp $(SRC_DIR)/opencc/build/wasm/src/libopencc.a thirdparty/lib/
 	mkdir -p thirdparty/data/opencc
 	cp $(SRC_DIR)/opencc/data/config/*.json thirdparty/data/opencc/
-	cp $(SRC_DIR)/opencc/build/data/*.ocd thirdparty/data/opencc/
+	cp $(SRC_DIR)/opencc/build/linux32/data/*.ocd thirdparty/data/opencc/
 
 yaml-cpp:
-	cd $(SRC_DIR)/yaml-cpp; cmake \
+	cd $(SRC_DIR)/yaml-cpp; emcmake cmake \
 	. -Bbuild \
 	-DCMAKE_BUILD_TYPE=Release \
 	&& cmake --build build
