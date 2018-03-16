@@ -16,6 +16,7 @@ set(
   Converter.hpp
   DartsDict.hpp
   Dict.hpp
+  DictConverter.hpp
   DictEntry.hpp
   DictGroup.hpp
   Exception.hpp
@@ -43,6 +44,7 @@ set(
   Converter.cpp
   DartsDict.cpp
   Dict.cpp
+  DictConverter.cpp
   DictEntry.cpp
   DictGroup.cpp
   MaxMatchSegmentation.cpp
@@ -115,5 +117,8 @@ if (ENABLE_GTEST)
 endif()
 
 # Subdir
-
-add_subdirectory(tools)
+if (NOT BUILD_FOR_WASM)
+  add_subdirectory(tools)
+else()
+  message("Building for wasm, disabling tools...")
+endif()
