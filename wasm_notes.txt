@@ -35,3 +35,15 @@ emcmake cmake \
 	-DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -s WASM=1 -s ASSERTIONS=1" \
 	&& cmake --build build -- VERBOSE=1
+
+
+
+
+====================
+
+Commented out 
+
+#set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+#set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+#set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+in Emscripten.cmake

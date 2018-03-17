@@ -1,11 +1,12 @@
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
-if (NOT EMSCRIPTEN)
+
 set(rime_api_console_src "rime_api_console.cc")
 add_executable(rime_api_console ${rime_api_console_src})
 target_link_libraries(rime_api_console ${rime_library} ${rime_gears_library})
 add_dependencies(rime_api_console ${rime_library} ${rime_gears_library})
 
+if (NOT EMSCRIPTEN)
 set(rime_patch_src "rime_patch.cc")
 add_executable(rime_patch ${rime_patch_src})
 target_link_libraries(rime_patch ${rime_library} ${rime_gears_library})
@@ -28,7 +29,7 @@ set_target_properties(
 message("==========CURRENT FLAGS")
 message(${CMAKE_CXX_FLAGS})
 #target_compile_options(rime_console PUBLIC "--preload-file ../build/bin@data")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_MEMORY=256MB --preload-file ${CMAKE_CURRENT_LIST_DIR}/../tdata@data")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_MEMORY=256MB --preload-file ${CMAKE_CURRENT_LIST_DIR}/../tdata@data --bind")
 message("==========CURRENT FLAGS")
 message(${CMAKE_CXX_FLAGS})
 endif()
