@@ -18,6 +18,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <iostream>
 #define BOOST_BIND_NO_PLACEHOLDERS
 #ifdef BOOST_SIGNALS2
 #include <boost/signals2/connection.hpp>
@@ -31,7 +32,8 @@
 #else
 #include "no_logging.h"
 #endif  // RIME_ENABLE_LOGGING
-
+// hack for debugging in browser:
+#define LOG(X) std::cout
 // call a pointer to member function on this
 #define RIME_THIS_CALL(f) (this->*(f))
 

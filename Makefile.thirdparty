@@ -4,7 +4,7 @@ SRC_DIR=thirdparty/src
 
 .PHONY: all clean-src glog leveldb marisa opencc yaml-cpp gtest
 
-all: glog leveldb marisa opencc yaml-cpp gtest
+all: leveldb marisa opencc yaml-cpp
 
 # note: this won't clean output files under include/, lib/ and bin/.
 clean-src:
@@ -19,6 +19,7 @@ glog:
 	cd $(SRC_DIR)/glog; emcmake cmake \
 	. -Bbuild \
 	-DWITH_GFLAGS:BOOL=OFF \
+	-DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -s WASM=1 -s ASSERTIONS=1 -s DISABLE_EXCEPTION_CATCHING=0 --memory-init-file 0" \
 	&& cmake --build build
 	cp -R $(SRC_DIR)/glog/build/glog thirdparty/include/
 	cp $(SRC_DIR)/glog/src/glog/log_severity.h thirdparty/include/glog/

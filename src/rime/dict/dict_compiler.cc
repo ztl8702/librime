@@ -35,23 +35,23 @@ static string LocateFile(const string& file_name) {
 }
 
 bool DictCompiler::Compile(const string &schema_file) {
-  LOG(INFO) << "compiling dictionary for " << schema_file;
+  LOG(INFO) << "compiling dictionary for " << schema_file <<"\n";
   bool build_table_from_source = true;
   DictSettings settings;
   string dict_file = LocateFile(dict_name_ + ".dict.yaml");
   if (!boost::filesystem::exists(dict_file)) {
-    LOG(ERROR) << "source file '" << dict_file << "' does not exist.";
+    LOG(ERROR) << "source file '" << dict_file << "' does not exist.\n";
     build_table_from_source = false;
   }
   else {
     std::ifstream fin(dict_file.c_str());
     if (!settings.LoadDictHeader(fin)) {
-      LOG(ERROR) << "failed to load settings from '" << dict_file << "'.";
+      LOG(ERROR) << "failed to load settings from '" << dict_file << "'.\n";
       return false;
     }
     fin.close();
-    LOG(INFO) << "dict name: " << settings.dict_name();
-    LOG(INFO) << "dict version: " << settings.dict_version();
+    LOG(INFO) << "dict name: " << settings.dict_name() <<"\n";
+    LOG(INFO) << "dict version: " << settings.dict_version() <<"\n";
   }
   vector<string> dict_files;
   auto tables = settings.GetTables();
@@ -61,11 +61,13 @@ bool DictCompiler::Compile(const string &schema_file) {
     string dict_name = As<ConfigValue>(*it)->str();
     string dict_file = LocateFile(dict_name + ".dict.yaml");
     if (!boost::filesystem::exists(dict_file)) {
-      LOG(ERROR) << "source file '" << dict_file << "' does not exist.";
+      LOG(ERROR) << "source file '" << dict_file << "' does not exist.\n";
       return false;
     }
+    LOG(INFO) << "dict file: " << dict_file <<"\n";
     dict_files.push_back(dict_file);
   }
+  LOG(INFO) << "DictCompiler: finished loading files" << "\n";
   uint32_t dict_file_checksum = 0;
   if (!dict_files.empty()) {
     ChecksumComputer cc;
@@ -77,6 +79,8 @@ bool DictCompiler::Compile(const string &schema_file) {
     }
     dict_file_checksum = cc.Checksum();
   }
+  LOG(INFO) << "DictCompiler: finished dict checksum" << "\n";
+  
   uint32_t schema_file_checksum =
       schema_file.empty() ? 0 : Checksum(schema_file);
   bool rebuild_table = true;
@@ -103,9 +107,12 @@ bool DictCompiler::Compile(const string &schema_file) {
     }
     prism_->Close();
   }
+  LOG(INFO) << "DictCompiler: finished schema checksum" << "\n";
+  
   LOG(INFO) << dict_file << "[" << dict_files.size() << " file(s)]"
-            << " (" << dict_file_checksum << ")";
-  LOG(INFO) << schema_file << " (" << schema_file_checksum << ")";
+            << " (" << dict_file_checksum << ")\n";
+  LOG(INFO) << schema_file << " (" << schema_file_checksum << ")\n";
+  LOG(INFO) << "DictCompiler: begin reversedb";
   {
     the<ResourceResolver> resolver(
         Service::instance().CreateResourceResolver(
@@ -117,17 +124,25 @@ bool DictCompiler::Compile(const string &schema_file) {
       rebuild_table = true;
     }
   }
+  LOG(INFO) << "DictCompiler: done reversedb\n";
+  
   if (build_table_from_source && (options_ & kRebuildTable)) {
     rebuild_table = true;
   }
   if (options_ & kRebuildPrism) {
     rebuild_prism = true;
   }
+  LOG(INFO) << "DictCompiler: before BuildTable\n";
+  
   if (rebuild_table && !BuildTable(&settings, dict_files, dict_file_checksum))
     return false;
+  LOG(INFO) << "DictCompiler: done BuildTable\n";
+    
   if (rebuild_prism && !BuildPrism(schema_file,
                                    dict_file_checksum, schema_file_checksum))
     return false;
+  LOG(INFO) << "DictCompiler: done BuildPrism\n";
+    
   // done!
   return true;
 }
@@ -143,18 +158,29 @@ static string RelocateToUserDirectory(const string& prefix,
 bool DictCompiler::BuildTable(DictSettings* settings,
                               const vector<string>& dict_files,
                               uint32_t dict_file_checksum) {
-  LOG(INFO) << "building table...";
+  LOG(INFO) << "building table...\n";
   table_ = New<Table>(RelocateToUserDirectory(prefix_, table_->file_name()));
+  LOG(INFO) << "building table...1\n";
 
   EntryCollector collector;
+  LOG(INFO) << "building table...2\n";
+  
   collector.Configure(settings);
+  LOG(INFO) << "building table...3\n";
+  
   collector.Collect(dict_files);
+  LOG(INFO) << "building table...4\n";
+  
   if (options_ & kDump) {
     boost::filesystem::path path(table_->file_name());
     path.replace_extension(".txt");
     collector.Dump(path.string());
   }
+  LOG(INFO) << "building table...5\n";
+  
   Vocabulary vocabulary;
+  LOG(INFO) << "before building .table.bin...\n";
+  
   // build .table.bin
   {
     map<string, SyllableId> syllable_to_id;
@@ -162,6 +188,7 @@ bool DictCompiler::BuildTable(DictSettings* settings,
     for (const auto& s : collector.syllabary) {
       syllable_to_id[s] = syllable_id++;
     }
+    LOG(INFO) << "syllabary id max=" << syllable_id<<"...\n";
     for (RawDictEntry& r : collector.entries) {
       Code code;
       for (const auto& s : r.raw_code) {
@@ -169,7 +196,7 @@ bool DictCompiler::BuildTable(DictSettings* settings,
       }
       DictEntryList* ls = vocabulary.LocateEntries(code);
       if (!ls) {
-        LOG(ERROR) << "Error locating entries in vocabulary.";
+        LOG(ERROR) << "Error locating entries in vocabulary.\n";
         continue;
       }
       auto e = New<DictEntry>();
@@ -177,17 +204,25 @@ bool DictCompiler::BuildTable(DictSettings* settings,
       e->text.swap(r.text);
       e->weight = r.weight;
       ls->push_back(e);
+      //LOG(INFO)<<e->text <<"\n";
     }
+    LOG(INFO)<<"before sort homophones"<<"\n";
+    
     if (settings->sort_order() != "original") {
       vocabulary.SortHomophones();
     }
+    LOG(INFO)<<"done sort homophones"<<"\n";
+    
     table_->Remove();
+    LOG(INFO)<<"done sort homophones"<<"\n";
+    
     if (!table_->Build(collector.syllabary, vocabulary, collector.num_entries,
                        dict_file_checksum) ||
         !table_->Save()) {
       return false;
     }
   }
+  LOG(INFO)<<"before building .reverse.bin"<<"\n";
   // build .reverse.bin
   ReverseDb reverse_db(RelocateToUserDirectory(prefix_,
                                                dict_name_ + ".reverse.bin"));

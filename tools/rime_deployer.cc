@@ -10,7 +10,7 @@
 #include <rime/service.h>
 #include <rime/setup.h>
 #include <rime/lever/deployment_tasks.h>
-
+#define LOG(X) std::cout
 using namespace rime;
 
 int add_schema(int count, char* schemas[]) {

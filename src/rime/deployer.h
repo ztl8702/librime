@@ -6,7 +6,6 @@
 //
 #ifndef RIME_DEPLOYER_H_
 #define RIME_DEPLOYER_H_
-
 #include <future>
 #include <mutex>
 #include <queue>
