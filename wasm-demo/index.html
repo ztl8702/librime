@@ -1,0 +1,122 @@
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link rel="stylesheet" href="tufte.css" />
+    <link rel="stylesheet" href="pandoc.css" />
+    <link rel="stylesheet" href="custom.css" />
+</head>
+
+<body>
+    <article id="container">
+        <h2>Test</h2>
+        <div>
+            <textarea id="output" class="userText"></textarea>
+        </div>
+        <div>
+            <input id="comp_raw" diabled />
+        </div>
+        <div>
+            <input id="comp" diabled />
+        </div>
+        <div>
+            <textarea id="menu" disabled></textarea>
+        </div>
+    </article>
+    <script type="text/javascript" src="keypress-2.1.5.min.js"></script>
+    <script>
+        window.textOutput = document.querySelector("#output");
+        window.textMenu = document.querySelector("#menu");
+        window.textComp = document.querySelector("#comp");
+        window.textCompR = document.querySelector("#comp_raw");
+        var enc = new TextEncoder('UTF-8');
+        var regexcomp = /{?[a-z,\,,_]*}?(.+)?=>(.*)/;
+        window.rime_callback = function (input) {
+            console.log(input);
+            var result = JSON.parse(input)
+            console.log();
+            if (result['type'] == 'commit') {
+                textOutput.value += result.text;
+                textMenu.value = "";
+                textComp.value = "";
+                textCompR.value = "";
+            } else if (result['type'] == 'composing') {
+
+                textCompR.value = result['comp'].match(regexcomp)[1];
+                textComp.value = result['comp'].match(regexcomp)[2];
+                textMenu.value = "";
+                for (var i = 0; i < result['cand'].length; ++i) {
+                    textMenu.value += (i + 1) + ": ";
+                    textMenu.value += result['cand'][i].text;
+                    if ((i + 1) % 5 == result['index'] % 5) textMenu.value += " <=";
+                    textMenu.value += "\n";
+                }
+                textMenu.value += `\n Page ${result['page_no']}\n`
+            }
+        }
+        loaded = function () {
+            console.log(Module);
+            textComp.value = "Loading...";
+            window.setTimeout(function () {
+                
+                try {
+                    Module.init();
+                } catch {
+
+                }
+                textComp.value = "Loading...OK";
+                initKeys();
+            }, 4000);
+        }
+    </script>
+    <script async type="text/javascript" src="rime_console.js" onload="loaded()"></script>
+    <script>
+        window.keyin = function (key) {
+            Module.input(enc.encode(key));
+        }
+        function initKeys() {
+            var listener = new window.keypress.Listener();
+            listener.simple_combo("ctrl `", function () {
+                keyin("{Control+grave}");
+            });
+            listener.simple_combo("space", function () {
+                keyin(" ");
+            });
+            listener.simple_combo("backspace", function () {
+                keyin("{BackSpace}");
+            });
+            listener.simple_combo("enter", function () {
+                keyin("{Return}");
+            });
+            listener.register_many([
+                {
+                    "keys": "up",
+                    "on_keydown": function () {
+                        keyin("{Up}");
+                    },
+                    "prevent_default": true
+                },
+                {
+                    "keys": "down",
+                    "on_keydown": function () {
+                        keyin("{Down}");
+                    },
+                    "prevent_default": true
+                },
+            ]);
+            letters = [];
+            ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+                'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+                'u', 'v', 'w', 'x', 'y', 'z'].forEach((x) => {
+                    letters.push({
+                        "keys": x,
+                        "on_keydown": () => keyin(x)
+                    });
+                })
+            listener.register_many(letters);
+        }
+    </script>
+</body>
+
+</html>
