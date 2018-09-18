@@ -19,8 +19,21 @@
 #include <rime/dict/dictionary.h>
 #include <rime/dict/dict_compiler.h>
 #include <rime/lever/deployment_tasks.h>
+#include <emscripten/bind.h>
+#include <sstream>
+#include <locale>
+#include <codecvt>
+#include <map>
 
 using namespace rime;
+using namespace emscripten;
+std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> ws_converter;
+
+void callback(string str){
+   val window = val::global("window");
+   std::wstring wide = ws_converter.from_bytes(str);
+   window.call<void>("rime_callback", wide);
+}
 
 class RimeConsole {
  public:
@@ -35,7 +48,8 @@ class RimeConsole {
 
   void OnCommit(const string &commit_text) {
     if (interactive_) {
-      std::cout << "commit : [" << commit_text << "]" << std::endl;
+    //  std::cout << "commit : [" << commit_text << "]" << std::endl;
+      callback("{ \"type\":\"commit\",\"text\" : \"" + commit_text + "\"}" );
     }
     else {
       std::cout << commit_text << std::endl;
@@ -45,11 +59,13 @@ class RimeConsole {
   void PrintComposition(const Context *ctx) {
     if (!ctx || !ctx->IsComposing())
       return;
-    std::cout << "input  : [" << ctx->input() << "]" << std::endl;
+    std::stringstream ss;
+    ss << "{ \"type\":\"composing\",";
+    ss << "\"input\" : \"" << ctx->input() << "\"," << std::endl;
     const Composition &comp = ctx->composition();
     if (comp.empty())
       return;
-    std::cout << "comp.  : [" << comp.GetDebugText() << "]" << std::endl;
+    ss << " \"comp\" : \"" << comp.GetDebugText() << "\"," << std::endl;
     const Segment &current(comp.back());
     if (!current.menu)
       return;
@@ -58,18 +74,26 @@ class RimeConsole {
     the<Page> page(current.menu->CreatePage(page_size, page_no));
     if (!page)
       return;
-    std::cout << "page_no: " << page_no
-              << ", index: " << current.selected_index << std::endl;
+    ss << "\"page_no\": " << page_no <<","
+              << " \"index\": " << current.selected_index << "," << std::endl;
+    ss << "\"cand\":[";
     int i = 0;
     for (const an<Candidate> &cand : page->candidates) {
-      std::cout << "cand. " << (++i % 10) <<  ": [";
-      std::cout << cand->text();
-      std::cout << "]";
+      ++i;
+      ss <<  " {\"text\": \"";
+      ss << cand->text();
+      ss << "\",";
       if (!cand->comment().empty())
-        std::cout << "  " << cand->comment();
-      std::cout << "  quality=" << cand->quality();
-      std::cout << std::endl;
+        ss << "\"comment\": \" " << cand->comment()<<"\",";
+      ss<< " \"quality\":" << cand->quality();
+      ss <<"}";
+      if (i<page->candidates.size()) {
+        ss<<",";
+      }
+      ss<<std::endl;
     }
+    ss<<"] }";
+    callback(ss.str());
   }
 
   void ProcessLine(const string &line) {
@@ -101,8 +125,8 @@ class RimeConsole {
   connection conn_;
 };
 
-// program entry
-int main(int argc, char *argv[]) {
+RimeConsole* gconsole;
+int init_rime(){
   // initialize la Rime
   SetupLogging("rime.console");
   LoadModules(kDefaultModules);
@@ -119,18 +143,24 @@ int main(int argc, char *argv[]) {
     std::cerr << "failure!" << std::endl;
     return 1;
   }
-  std::cerr << "ready." << std::endl;
+  std::cout << "ready." << std::endl;
+  gconsole = new RimeConsole();
+  gconsole->set_interactive(true);
+  gconsole->ProcessLine("abc abc {enter}");
+}
 
-  RimeConsole console;
-  // "-i" turns on interactive mode (no commit at the end of line)
-  bool interactive = argc > 1 && !strcmp(argv[1], "-i");
-  console.set_interactive(interactive);
+void process_input(string inputString) {
+  std::cout<<"Received input: "<<inputString<<"\n";
+  gconsole->ProcessLine(inputString);
+  std::cout<<"done processsing"<<"\n";
+  
+}
 
-  // process input
-  string line;
-  while (std::cin) {
-    std::getline(std::cin, line);
-    console.ProcessLine(line);
-  }
-  return 0;
+int main() {
+  std::cout<<"Hello World"<<"\n";
+}
+
+EMSCRIPTEN_BINDINGS(my_module) {
+    emscripten::function("init", &init_rime);
+    emscripten::function("input", &process_input);
 }

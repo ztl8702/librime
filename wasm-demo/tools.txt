@@ -1,0 +1,18 @@
+emscripten 1.37.35
+boost: https://github.com/arielm/chronotext-boost
+1.62
+
+
+LIBRARIES="--with-system --with-filesystem --with-iostreams --with-regex --with-signals --with-locale"
+
+
+special cmake toolchain file
+
+emscripten/1.37.35/cmake/Modules/Platform/Emscripten.cmake
+
+comment out these lines in Emscripten.cmake
+#set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+#set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+#set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+

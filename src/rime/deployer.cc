@@ -12,8 +12,8 @@
 
 namespace rime {
 
-Deployer::Deployer() : shared_data_dir("."),
-                       user_data_dir("."),
+Deployer::Deployer() : shared_data_dir("data"),
+                       user_data_dir("data"),
                        sync_dir("sync"),
                        user_id("unknown") {
 }
@@ -80,7 +80,7 @@ bool Deployer::HasPendingTasks() {
 }
 
 bool Deployer::Run() {
-  LOG(INFO) << "running deployment tasks:";
+  LOG(INFO) << "running deployment tasks:\n";
   message_sink_("deploy", "start");
   int success = 0;
   int failure = 0;
@@ -93,7 +93,7 @@ bool Deployer::Run() {
       //boost::this_thread::interruption_point();
     }
     LOG(INFO) << success + failure << " tasks ran: "
-              << success << " success, " << failure << " failure.";
+              << success << " success, " << failure << " failure.\n";
     message_sink_("deploy", !failure ? "success" : "failure");
     // new tasks could have been enqueued while we were sending the message.
     // before quitting, double check if there is nothing left to do.

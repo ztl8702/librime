@@ -27,9 +27,10 @@
  */
 
 var path = require('path');
-var binding = require('../build/Release/binding');
+var bindingPath = require('node-pre-gyp').find(require.resolve('../package.json'));
+var binding = require(bindingPath);
 
-var assetsPath = path.resolve(__dirname, '../build/Release');
+var assetsPath = path.dirname(bindingPath);
 var getConfigPath = function (config) {
   var configPath = config;
   if (config[0] !== '/' && config[1] !== ':') {
@@ -55,6 +56,33 @@ var OpenCC = module.exports = function (config) {
 };
 
 /**
+ * The version of OpenCC library.
+ *
+ * @fn OpenCC.version
+ * @memberof OpenCC
+ * @ingroup node_api
+ */
+OpenCC.version = binding.Opencc.version();
+
+/**
+ * Generates dictionary from another format.
+ *
+ * @fn string generateDict(string inputFileName, string outputFileName, string formatFrom, string formatTo)
+ * @memberof OpenCC
+ * @param inputFileName Input dictionary filename.
+ * @param outputFileName Output dictionary filename.
+ * @param formatFrom Input dictionary format.
+ * @param formatTo Input dictionary format.
+ * @return Converted text.
+ * @ingroup node_api
+ */
+OpenCC.generateDict = function(inputFileName, outputFileName,
+    formatFrom, formatTo) {
+  return binding.Opencc.generateDict(inputFileName, outputFileName,
+    formatFrom, formatTo); 
+}
+
+/**
  * Converts input text.
  *
  * @fn void convert(string input, function callback)
@@ -78,4 +106,23 @@ OpenCC.prototype.convert = function (input, callback) {
  */
 OpenCC.prototype.convertSync = function (input) {
   return this.handler.convertSync(input.toString());
+};
+
+/**
+ * Converts input text asynchronously and returns a Promise.
+ *
+ * @fn Promise convertPromise(string input)
+ * @memberof OpenCC
+ * @param input Input text.
+ * @return The Promise that will yield the converted text.
+ * @ingroup node_api
+ */
+OpenCC.prototype.convertPromise = function (input) {
+  const self = this;
+  return new Promise(function(resolve, reject) {
+    self.handler.convert(input.toString(), function(err, text) {
+      if (err) reject(err);
+      else resolve(text);
+    });
+  });
 };

@@ -1,0 +1,49 @@
+emcmake cmake \
+	. -Bbuild \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DCMAKE_INSTALL_PREFIX=/usr \
+	-DBUILD_SHARED_LIBS:BOOL=OFF \
+    -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -s WASM=1 -s ASSERTIONS=1 -s DISABLE_EXCEPTION_CATCHING=0 --memory-init-file 0"
+
+
+In build/data/CMakeFiles/Dictionaries.dir/build.make
+replace 
+\"/home/ztl8702/emsdk-portable/node/8.9.1_64bit/bin/node\"
+with
+/home/ztl8702/emsdk-portable/node/8.9.1_64bit/bin/node
+
+
+in opencc_dict.js
+
+replace
+wasmBinaryFile="opencc_dict.wasm";
+with
+wasmBinaryFile=__dirname+"/"+"opencc_dict.wasm";
+
+
+
+
+
+
+
+
+
+
+===================
+emcmake cmake \
+	. -Bbuild \
+	-DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -s WASM=1 -s ASSERTIONS=1" \
+	&& cmake --build build -- VERBOSE=1
+
+
+
+
+====================
+
+Commented out 
+
+#set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+#set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+#set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+in Emscripten.cmake

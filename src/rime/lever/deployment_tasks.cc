@@ -157,30 +157,43 @@ bool InstallationUpdate::Run(Deployer* deployer) {
 }
 
 bool WorkspaceUpdate::Run(Deployer* deployer) {
-  LOG(INFO) << "updating workspace.";
+  LOG(INFO) << "updating workspace.\n";
   {
     the<DeploymentTask> t;
+    LOG(INFO) << "WorkspaceUpdate::Run: begin ConfigFileUpdate.\n";
+    
     t.reset(new ConfigFileUpdate("default.yaml", "config_version"));
     t->Run(deployer);
     // Deprecated: symbols.yaml is only used as source file
     //t.reset(new ConfigFileUpdate("symbols.yaml", "config_version"));
     //t->Run(deployer);
+    LOG(INFO) << "WorkspaceUpdate::Run: done ConfigFileUpdate.\n";
+    LOG(INFO) << "WorkspaceUpdate::Run: begin SymlinkingPrebuiltDictionaries.\n";
+    
     t.reset(new SymlinkingPrebuiltDictionaries);
+    
     t->Run(deployer);
+    LOG(INFO) << "WorkspaceUpdate::Run: done SymlinkingPrebuiltDictionaries.\n";
+  
   }
+  
+  LOG(INFO) << "WorkspaceUpdate::Run: before require config\n";
 
   the<Config> config(Config::Require("config")->Create("default"));
   if (!config) {
-    LOG(ERROR) << "Error loading default config.";
+    LOG(ERROR) << "Error loading default config.\n";
     return false;
   }
+  LOG(INFO) << "WorkspaceUpdate::Run: before get schema_list\n";
+  
   auto schema_list = config->GetList("schema_list");
   if (!schema_list) {
-    LOG(WARNING) << "schema list not defined.";
+    LOG(WARNING) << "schema list not defined.\n";
     return false;
   }
+  LOG(INFO) << "WorkspaceUpdate::Run: got schema_list\n";
 
-  LOG(INFO) << "updating schemas.";
+  LOG(INFO) << "updating schemas.\n";
   int success = 0;
   int failure = 0;
   map<string, string> schemas;
@@ -190,7 +203,7 @@ bool WorkspaceUpdate::Run(Deployer* deployer) {
   auto build_schema = [&](const string& schema_id) {
     if (schemas.find(schema_id) != schemas.end())  // already built
       return;
-    LOG(INFO) << "schema: " << schema_id;
+    LOG(INFO) << "schema: " << schema_id << "\n";
     string schema_path;
     if (schemas.find(schema_id) == schemas.end()) {
       schema_path = resolver->ResolvePath(schema_id).string();
@@ -200,7 +213,7 @@ bool WorkspaceUpdate::Run(Deployer* deployer) {
       schema_path = schemas[schema_id];
     }
     if (schema_path.empty()) {
-      LOG(WARNING) << "missing schema file for '" << schema_id << "'.";
+      LOG(WARNING) << "missing schema file for '" << schema_id << "'.\n";
       return;
     }
     the<DeploymentTask> t(new SchemaUpdate(schema_path));
@@ -233,7 +246,7 @@ bool WorkspaceUpdate::Run(Deployer* deployer) {
     }
   }
   LOG(INFO) << "finished updating schemas: "
-            << success << " success, " << failure << " failure.";
+            << success << " success, " << failure << " failure.\n";
 
   the<Config> user_config(Config::Require("user_config")->Create("user"));
   // TODO: store as 64-bit number to avoid the year 2038 problem
@@ -245,6 +258,7 @@ bool WorkspaceUpdate::Run(Deployer* deployer) {
 SchemaUpdate::SchemaUpdate(TaskInitializer arg) : verbose_(false) {
   try {
     schema_file_ = boost::any_cast<string>(arg);
+    LOG(INFO) << "SchemaUpdate constructor: " << schema_file_ <<"\n";
   }
   catch (const boost::bad_any_cast&) {
     LOG(ERROR) << "SchemaUpdate: invalid arguments.";
@@ -314,10 +328,11 @@ static bool TrashDeprecatedUserCopy(const fs::path& shared_copy,
 }
 
 bool SchemaUpdate::Run(Deployer* deployer) {
+  LOG(INFO) << "SchemaUpdate::Run()"<<"\n";
   fs::path source_path(schema_file_);
   if (!fs::exists(source_path)) {
     LOG(ERROR) << "Error updating schema: nonexistent file '"
-               << schema_file_ << "'.";
+               << schema_file_ << "'.\n";
     return false;
   }
   string schema_id;
@@ -325,15 +340,18 @@ bool SchemaUpdate::Run(Deployer* deployer) {
   if (!config->LoadFromFile(schema_file_) ||
       !config->GetString("schema/schema_id", &schema_id) ||
       schema_id.empty()) {
-    LOG(ERROR) << "invalid schema definition in '" << schema_file_ << "'.";
+    LOG(ERROR) << "invalid schema definition in '" << schema_file_ << "'.\n";
     return false;
   }
+  LOG(INFO) << "SchemaUpdate::Run() before ConfigFileUpdate"<<"\n";
 
   the<DeploymentTask> config_file_update(
       new ConfigFileUpdate(schema_id + ".schema.yaml", "schema/version"));
   if (!config_file_update->Run(deployer)) {
     return false;
   }
+  LOG(INFO) << "SchemaUpdate::Run() done ConfigFileUpdate"<<"\n";
+  
   // reload compiled config
   config.reset(Config::Require("schema")->Create(schema_id));
   string dict_name;
@@ -345,11 +363,11 @@ bool SchemaUpdate::Run(Deployer* deployer) {
   the<Dictionary> dict(
       Dictionary::Require("dictionary")->Create({&schema, "translator"}));
   if (!dict) {
-    LOG(ERROR) << "Error creating dictionary '" << dict_name << "'.";
+    LOG(ERROR) << "Error creating dictionary '" << dict_name << "'. \n";
     return false;
   }
 
-  LOG(INFO) << "preparing dictionary '" << dict_name << "'.";
+  LOG(INFO) << "preparing dictionary '" << dict_name << "'.\n";
   fs::path user_data_path(deployer->user_data_dir);
   if (!MaybeCreateDirectory(user_data_path / "build")) {
     return false;
@@ -364,10 +382,10 @@ bool SchemaUpdate::Run(Deployer* deployer) {
   resolver->set_root_path(user_data_path);
   auto compiled_schema = resolver->ResolvePath(schema_id).string();
   if (!dict_compiler.Compile(compiled_schema)) {
-    LOG(ERROR) << "dictionary '" << dict_name << "' failed to compile.";
+    LOG(ERROR) << "dictionary '" << dict_name << "' failed to compile.\n";
     return false;
   }
-  LOG(INFO) << "dictionary '" << dict_name << "' is ready.";
+  LOG(INFO) << "dictionary '" << dict_name << "' is ready.\n";
   return true;
 }
 
@@ -378,7 +396,7 @@ ConfigFileUpdate::ConfigFileUpdate(TaskInitializer arg) {
     version_key_ = p.second;
   }
   catch (const boost::bad_any_cast&) {
-    LOG(ERROR) << "ConfigFileUpdate: invalid arguments.";
+    LOG(ERROR) << "ConfigFileUpdate: invalid arguments.\n";
   }
 }
 
@@ -466,6 +484,7 @@ bool PrebuildAllSchemas::Run(Deployer* deployer) {
 bool SymlinkingPrebuiltDictionaries::Run(Deployer* deployer) {
   fs::path shared_data_path(deployer->shared_data_dir);
   fs::path user_data_path(deployer->user_data_dir);
+  LOG(INFO) << "SymlinkingPrebuiltDictionaries::Run\n";
   if (!fs::exists(shared_data_path) || !fs::is_directory(shared_data_path) ||
       !fs::exists(user_data_path) || !fs::is_directory(user_data_path) ||
       fs::equivalent(shared_data_path, user_data_path))
@@ -475,17 +494,18 @@ bool SymlinkingPrebuiltDictionaries::Run(Deployer* deployer) {
   for (fs::directory_iterator test(user_data_path), end;
        test != end; ++test) {
     fs::path entry(test->path());
+    LOG(INFO) << "SymlinkingPrebuiltDictionaries::Run " <<"test" << test->path()<<"\n";
     if (fs::is_symlink(entry)) {
       try {
         auto target_path = fs::canonical(entry);
         if (target_path.has_parent_path() &&
             fs::equivalent(shared_data_path, target_path.parent_path())) {
-          LOG(INFO) << "removing symlink: " << entry.filename().string();
+          LOG(INFO) << "removing symlink: " << entry.filename().string() <<"\n";
           fs::remove(entry);
         }
       }
       catch (const fs::filesystem_error& ex) {
-        LOG(ERROR) << ex.what();
+        LOG(ERROR) << ex.what() <<"\n";
         success = false;
       }
     }

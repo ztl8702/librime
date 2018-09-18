@@ -361,16 +361,16 @@ bool Table::Build(const Syllabary& syllabary, const Vocabulary& vocabulary,
   const size_t kReservedSize = 4096;
   size_t num_syllables = syllabary.size();
   size_t estimated_file_size = kReservedSize + 32 * num_syllables + 64 * num_entries;
-  LOG(INFO) << "building table.";
-  LOG(INFO) << "num syllables: " << num_syllables;
-  LOG(INFO) << "num entries: " << num_entries;
-  LOG(INFO) << "estimated file size: " << estimated_file_size;
+  LOG(INFO) << "building table.\n";
+  LOG(INFO) << "num syllables: " << num_syllables<<"\n";
+  LOG(INFO) << "num entries: " << num_entries<<"\n";
+  LOG(INFO) << "estimated file size: " << estimated_file_size<<"\n";
   if (!Create(estimated_file_size)) {
     LOG(ERROR) << "Error creating table file '" << file_name() << "'.";
     return false;
   }
 
-  LOG(INFO) << "creating metadata.";
+  LOG(INFO) << "creating metadata.\n";
   metadata_ = Allocate<table::Metadata>();
   if (!metadata_) {
     LOG(ERROR) << "Error creating metadata in file '" << file_name() << "'.";
@@ -384,7 +384,7 @@ bool Table::Build(const Syllabary& syllabary, const Vocabulary& vocabulary,
     return false;
   }
 
-  LOG(INFO) << "creating syllabary.";
+  LOG(INFO) << "creating syllabary.\n";
   syllabary_ = CreateArray<table::StringType>(num_syllables);
   if (!syllabary_) {
     LOG(ERROR) << "Error creating syllabary.";
@@ -398,7 +398,7 @@ bool Table::Build(const Syllabary& syllabary, const Vocabulary& vocabulary,
   }
   metadata_->syllabary = syllabary_;
 
-  LOG(INFO) << "creating table index.";
+  LOG(INFO) << "creating table index.\n";
   index_ = BuildIndex(vocabulary, num_syllables);
   if (!index_) {
     LOG(ERROR) << "Error creating table index.";

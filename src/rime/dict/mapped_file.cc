@@ -85,12 +85,13 @@ MappedFile::~MappedFile() {
 }
 
 bool MappedFile::Create(size_t capacity) {
+  LOG(INFO)<<"MappedFile::Create"<<capacity<<"\n";
   if (Exists()) {
-    LOG(INFO) << "overwriting file '" << file_name_ << "'.";
+    LOG(INFO) << "overwriting file '" << file_name_ << "'.\n";
     Resize(capacity);
   }
   else {
-    LOG(INFO) << "creating file '" << file_name_ << "'.";
+    LOG(INFO) << "creating file '" << file_name_ << "'.\n";
     std::filebuf fbuf;
     fbuf.open(file_name_.c_str(),
               std::ios_base::in | std::ios_base::out |
@@ -101,8 +102,10 @@ bool MappedFile::Create(size_t capacity) {
     }
     fbuf.close();
   }
-  LOG(INFO) << "opening file for read/write access.";
+  LOG(INFO) << "opening file for read/write access.\n";
   file_.reset(new MappedFileImpl(file_name_, MappedFileImpl::kOpenReadWrite));
+  LOG(INFO) << "done file_.reset()\n";
+  
   size_ = 0;
   return bool(file_);
 }
