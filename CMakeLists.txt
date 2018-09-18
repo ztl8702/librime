@@ -4,7 +4,7 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_fla
 project(rime)
 cmake_minimum_required(VERSION 2.8.11)
 
-set(rime_version 1.2.10)
+set(rime_version 1.3.1)
 set(rime_soversion 1)
 
 add_definitions(-DRIME_VERSION="${rime_version}")
@@ -17,8 +17,9 @@ option(BUILD_SEPARATE_LIBS "Build a separate rime-gears library" OFF)
 option(ENABLE_LOGGING "Enable logging with google-glog library" ON)
 option(BOOST_USE_CXX11 "Boost has been built with C++11 support" OFF)
 option(BOOST_USE_SIGNALS2 "Boost use signals2 instead of signals" ON)
+option(ENABLE_ASAN "Enable Address Sanitizer (Unix Only)" OFF)
 
-SET(rime_data_dir "/share/rime-data" CACHE STRING "Target directory for Rime data")
+set(rime_data_dir "/share/rime-data" CACHE STRING "Target directory for Rime data")
 
 if(WIN32)
   set(ext ".exe")
@@ -26,6 +27,15 @@ endif(WIN32)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${PROJECT_SOURCE_DIR}/thirdparty")
+
+if (ENABLE_ASAN)
+  set(asan_cflags "-fsanitize=address -fno-omit-frame-pointer")
+  set(asan_lflags "-fsanitize=address -lasan")
+  set(CMAKE_C_FLAGS "${asan_cflags} ${CMAKE_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${asan_cflags} ${CMAKE_CXX_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${asan_lflags} ${CMAKE_EXE_LINKER_FLAGS}")
+  set(CMAKE_SHARED_LINKER_FLAGS "${asan_lflags} ${CMAKE_SHARED_LINKER_FLAGS}")
+endif()
 
 set(Boost_USE_STATIC_LIBS ${BUILD_STATIC})
 set(Gflags_STATIC ${BUILD_STATIC})
@@ -186,8 +196,11 @@ else()
 endif()
 
 add_subdirectory(src)
-add_subdirectory(tools)
 
-if(GTEST_FOUND)
-  add_subdirectory(test)
+if(BUILD_SHARED_LIBS)
+  add_subdirectory(tools)
+
+  if(GTEST_FOUND)
+    add_subdirectory(test)
+  endif()
 endif()

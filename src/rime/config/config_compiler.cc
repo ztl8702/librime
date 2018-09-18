@@ -9,6 +9,14 @@
 
 namespace rime {
 
+std::ostream& operator<< (std::ostream& stream, const Reference& reference) {
+  return stream << reference.repr();
+}
+
+std::ostream& operator<< (std::ostream& stream, const Dependency& dependency) {
+  return stream << dependency.repr();
+}
+
 struct ConfigDependencyGraph {
   map<string, of<ConfigResource>> resources;
   vector<of<ConfigItemRef>> node_stack;
@@ -97,8 +105,13 @@ static bool AppendToList(an<ConfigItemRef> target, an<ConfigList> list) {
     return false;
   auto existing_list = As<ConfigList>(**target);
   if (!existing_list) {
-    LOG(ERROR) << "trying to append list to other value";
-    return false;
+    if (!(**target)->empty()) {
+      LOG(ERROR) << "trying to append list to incompatible node type";
+      return false;
+    }
+    // convert empty node (usually map with only compiler directives) to list;
+    // refer to test case RimeConfigMergeTest.CreateListWithInplacePatch
+    existing_list = target->AsList();
   }
   if (list->empty())
     return true;
@@ -155,33 +168,39 @@ inline static string StripOperator(const string& key, bool adding) {
 }
 
 // defined in config_data.cc
-bool TraverseCopyOnWrite(an<ConfigItemRef> root, const string& path,
-                         function<bool (an<ConfigItemRef> target)> writer);
+an<ConfigItemRef> TypeCheckedCopyOnWrite(an<ConfigItemRef> parent,
+                                         const string& key);
+an<ConfigItemRef> TraverseCopyOnWrite(an<ConfigItemRef> head,
+                                      const string& path);
 
-static bool EditNode(an<ConfigItemRef> target,
+static bool EditNode(an<ConfigItemRef> head,
                      const string& key,
                      const an<ConfigItem>& value,
                      bool merge_tree) {
-  DLOG(INFO) << "EditNode(" << key << "," << merge_tree << ")";
+  DLOG(INFO) << "edit node: " << key << ", merge_tree: " << merge_tree;
   bool appending = IsAppending(key);
   bool merging = IsMerging(key, value, merge_tree);
-  auto writer = [=](an<ConfigItemRef> target) {
-    if ((appending || merging) && **target) {
-      DLOG(INFO) << "writer: editing node";
-      return !value ||
-      (appending && (AppendToString(target, As<ConfigValue>(value)) ||
-                     AppendToList(target, As<ConfigList>(value)))) ||
-      (merging && MergeTree(target, As<ConfigMap>(value)));
-    } else {
-      DLOG(INFO) << "writer: overwriting node";
-      *target = value;
-      return true;
-    }
-  };
   string path = StripOperator(key, appending || merging);
   DLOG(INFO) << "appending: " << appending << ", merging: " << merging
              << ", path: " << path;
-  return TraverseCopyOnWrite(target, path, writer);
+  auto find_target_node =
+      merge_tree ? &TypeCheckedCopyOnWrite : &TraverseCopyOnWrite;
+  auto target = find_target_node(head, path);
+  if (!target) {
+    // error finding target node; cannot write
+    return false;
+  }
+  if ((appending || merging) && **target) {
+    DLOG(INFO) << "writer: editing node";
+    return !value ||  // no-op
+        (appending && (AppendToString(target, As<ConfigValue>(value)) ||
+                       AppendToList(target, As<ConfigList>(value)))) ||
+        (merging && MergeTree(target, As<ConfigMap>(value)));
+  } else {
+    DLOG(INFO) << "writer: overwriting node";
+    *target = value;
+    return true;
+  }
 }
 
 bool PatchLiteral::Resolve(ConfigCompiler* compiler) {
