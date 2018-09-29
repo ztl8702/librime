@@ -3,7 +3,7 @@ RIME_ROOT = $(CURDIR)
 sharedir = $(DESTDIR)/usr/share
 bindir = $(DESTDIR)/usr/bin
 
-.PHONY: all thirdparty clean librime librime-static install-librime uninstall-librime release install uninstall debug install-debug uninstall-debug test
+.PHONY: all thirdparty clean librime librime-static install-librime uninstall-librime release install uninstall debug install-debug uninstall-debug test wasm
 
 all: release
 
@@ -25,11 +25,11 @@ librime-static:
 	cmake --build build-static
 
 wasm:
-	cmake . -Bbuild --debug-output \
-	-DBOOST_INCLUDEDIR:FILEPATH=/home/ztl8702/chronotext-boost/dist/emscripten/include \
-	-DBOOST_LIBRARYDIR:FILEPATH=/home/ztl8702/chronotext-boost/dist/emscripten/lib \
+	emcmake cmake . -Bbuild --debug-output \
+	-DBOOST_INCLUDEDIR:FILEPATH=/root/chronotext-boost/dist/emscripten/include \
+	-DBOOST_LIBRARYDIR:FILEPATH=/root/chronotext-boost/dist/emscripten/lib \
 	-DBUILD_TEST=OFF -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC=ON -DBUILD_SHARED_LIBS=OFF \
-	-DCMAKE_TOOLCHAIN_FILE=/home/ztl8702/emsdk-portable/emscripten/1.37.35/cmake/Modules/Platform/Emscripten.cmake \
+	-DCMAKE_TOOLCHAIN_FILE=/root/emsdk/emscripten/1.38.12/cmake/Modules/Platform/Emscripten.cmake \
 	-DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -s WASM=1 -s ASSERTIONS=1 -s DISABLE_EXCEPTION_CATCHING=0 --memory-init-file 0"
 	cmake --build build
 

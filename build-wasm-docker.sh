@@ -1,0 +1,1 @@
+docker run --rm -it -v $PWD/:/root/workspace wasm bash -c "source ~/.bashrc; make clean && make thirdparty && make wasm"

@@ -30,6 +30,8 @@ build:
 	../..)
 	make -C build/rel VERBOSE=${VERBOSE} PREFIX=${PREFIX}
 
+# Build OpenCC targeting 32bit linux to generate the data files
+# because wasm is 32bit only and requires .ocd files to be 32bit.
 wasm-data:
 	mkdir -p build/linux32
 	(cd build/linux32; cmake \
@@ -40,6 +42,7 @@ wasm-data:
 	../..)
 	make -C build/linux32 VERBOSE=${VERBOSE} PREFIX=${PREFIX}
 
+# Build OpenCC targeting wasm
 wasm: wasm-data
 	mkdir -p build/wasm
 	cp -rf build/linux32/data build/wasm

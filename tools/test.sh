@@ -1,22 +1,15 @@
-em++ -o rime_console.html \
+em++ -v --bind --preload-file ../data/minimal@/data \
+     -o rime_console.html \
      -std=c++11 \
      -Wall \
-     -O3 \
+     -O1 \
      -s WASM=1 -s ASSERTIONS=1 -s DISABLE_EXCEPTION_CATCHING=0 \
      -s ALLOW_MEMORY_GROWTH=1 \
-     -I ../src/ \
-     -I/home/ztl8702/chronotext-boost/dist/emscripten/include \
-     -I ../thirdparty/include \
-     -L/home/ztl8702/chronotext-boost/dist/emscripten/lib \
-     -L/home/ztl8702/dev/librime/thirdparty/lib ../build/lib/librime.a \
-     /home/ztl8702/chronotext-boost/dist/emscripten/lib/libboost_filesystem.a \
-     /home/ztl8702/chronotext-boost/dist/emscripten/lib/libboost_regex.a \
-     /home/ztl8702/chronotext-boost/dist/emscripten/lib/libboost_signals.a \
-     /home/ztl8702/chronotext-boost/dist/emscripten/lib/libboost_system.a \
-     /home/ztl8702/chronotext-boost/dist/emscripten/lib/libboost_locale.a \
-     ../thirdparty/lib/libglog.a \
-     ../thirdparty/lib/libyaml-cpp.a \
-     ../thirdparty/lib/libleveldb.a \
-     ../thirdparty/lib/libmarisa.a \
-     ../thirdparty/lib/libopencc.a \
-     rime_console.cc 
+     -I../src/ \
+     -I/root/chronotext-boost/dist/emscripten/include \
+     -I../thirdparty/include \
+     rime_console.cc \
+     -L../build/lib -lrime \
+     -L../thirdparty/lib -lglog -lyaml-cpp -lleveldb -lmarisa -lopencc \
+     -L/root/chronotext-boost/dist/emscripten/lib \
+     -lboost_signals -lboost_filesystem -lboost_regex -lboost_system -lboost_locale
